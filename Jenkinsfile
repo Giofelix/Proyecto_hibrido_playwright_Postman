@@ -19,8 +19,9 @@ pipeline {
         WORKSPACE_REPORTS = "${env.WORKSPACE}\\reports"
         API_REPORT_DIR = "${env.WORKSPACE}\\reports\\api-report"
         UI_REPORT_DIR = "${env.WORKSPACE}\\reports\\ui-report"
+        ALLURE_RESULTS_DIR = "${env.WORKSPACE}\\allure-results"
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
@@ -28,7 +29,48 @@ pipeline {
                 checkout scm
             }
         }
-        
+
+        stage('✅ Verificación previa') {
+            steps {
+                script {
+                    echo 'Verificando que el entorno y los archivos necesarios estén listos antes del build...'
+                    bat '''
+                        echo ===== VERSIONES DE HERRAMIENTAS =====
+                        node -v || (echo ERROR: Node.js no esta instalado o no esta en PATH && exit /b 1)
+                        npm -v  || (echo ERROR: npm no esta instalado o no esta en PATH && exit /b 1)
+                        java -version || (echo ERROR: Java no esta instalado o no esta en PATH ^(requerido por Allure^) && exit /b 1)
+
+                        echo.
+                        echo ===== ARCHIVOS CLAVE DEL PROYECTO =====
+                        if not exist "api\\collections\\API_Automation_Project_collection.json" (
+                            echo ERROR: No se encuentra la coleccion de Postman
+                            exit /b 1
+                        )
+                        if not exist "api\\environments\\workspace.postman_globals.json" (
+                            echo ERROR: No se encuentra el archivo de globals de Postman
+                            exit /b 1
+                        )
+                        if not exist "playwright.config.js" (
+                            echo ERROR: No se encuentra playwright.config.js
+                            exit /b 1
+                        )
+                        if not exist "package.json" (
+                            echo ERROR: No se encuentra package.json
+                            exit /b 1
+                        )
+                        echo Todos los archivos clave estan presentes.
+
+                        echo.
+                        echo ===== ESPACIO EN DISCO =====
+                        wmic logicaldisk get caption,freespace,size
+
+                        echo.
+                        echo Verificacion previa completada correctamente.
+                    '''
+                }
+            }
+        }
+
         stage('📦 Instalación de Dependencias') {
             steps {
                 script {
@@ -67,6 +109,7 @@ pipeline {
                         if not exist reports mkdir reports
                         if not exist reports\\api-report mkdir reports\\api-report
                         if not exist reports\\ui-report mkdir reports\\ui-report
+                        if not exist allure-results mkdir allure-results
                     '''
                 }
             }
@@ -228,6 +271,14 @@ pipeline {
                         dir /s /b reports\\ui-report\\*.html 2>nul
                     '''
                 }
+
+                // Publicar el reporte combinado de Allure (API + UI en un solo dashboard,
+                // con historial de tendencias entre builds gracias al Allure Jenkins Plugin).
+                echo "Publicando reporte Allure..."
+                allure([
+                    includeProperties: false,
+                    results: [[path: 'allure-results']]
+                ])
             }
         }
         

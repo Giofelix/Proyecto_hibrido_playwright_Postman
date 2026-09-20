@@ -25,13 +25,18 @@ export default defineConfig({
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
  reporter: [
     ['list'], // Este muestra output en consola
-    ['html', { 
-      outputFolder: 'reports/ui-report', 
-      open: 'never' 
+    ['html', {
+      outputFolder: 'reports/ui-report',
+      open: 'never'
     }],
-    ['json', { 
-      outputFile: 'reports/test-results.json' 
-    }]
+    ['json', {
+      outputFile: 'reports/test-results.json'
+    }],
+    ['allure-playwright', {
+      resultsDir: 'allure-results', // misma carpeta que usa Newman -> un solo reporte Allure combinado
+      detail: true,
+      suiteTitle: false,
+    }],
   ],
 
   outputDir: 'test-results/', // Descomenta si quieres guardar traces/videos
