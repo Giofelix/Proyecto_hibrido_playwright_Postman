@@ -50,8 +50,8 @@ pipeline {
                             echo ERROR: No se encuentra el archivo de globals de Postman
                             exit /b 1
                         )
-                        if not exist "playwright.config.js" (
-                            echo ERROR: No se encuentra playwright.config.js
+                        if not exist "playwright.config.mjs" (
+                            echo ERROR: No se encuentra playwright.config.mjs
                             exit /b 1
                         )
                         if not exist "package.json" (
